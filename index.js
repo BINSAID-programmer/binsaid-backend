@@ -1,4 +1,3 @@
-const express = require('express');
 const { makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const app = express();
