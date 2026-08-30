@@ -1,0 +1,14 @@
+package.json
+{
+  "name": "binsaid-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.0",
+    "express": "^4.19.2",
+    "pino": "^8.20.0"
+  }
+}
