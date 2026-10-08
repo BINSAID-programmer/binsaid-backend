@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.0",
+    "cors": "^2.8.6",
     "express": "^4.19.2",
     "pino": "^8.19.0"
   }
