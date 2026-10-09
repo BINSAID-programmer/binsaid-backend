@@ -252,8 +252,8 @@ add(
   'reply kwenye view once ili kuifungua',
   async (c) => {
     const { sock, m, jid } = c;
-    // Owner gets the media in "Message yourself"; anyone else gets it in the chat where they used the command
-    const me = c.isOwner ? jidNormalizedUser(sock.user.id) : jid;
+    // Media opens right here in the same chat where .binsaid was used
+    const me = jid;
     try {
       const inner = unwrap(m.message);
       const ctx = inner.extendedTextMessage?.contextInfo;
@@ -467,6 +467,9 @@ async function startSock(phone, res) {
   const { state, saveCreds } = await useMultiFileAuthState(dir);
   const { version } = await fetchLatestBaileysVersion();
 
+  if (!caches.has(phone)) caches.set(phone, new Map());
+  const msgCache = caches.get(phone);
+
   const sock = makeWASocket({
     version,
     auth: state,
@@ -474,10 +477,20 @@ async function startSock(phone, res) {
     browser: Browsers.ubuntu('Chrome'),
     printQRInTerminal: false,
     syncFullHistory: false,
+    markOnlineOnConnect: false,
+    // lets WhatsApp re-request messages it could not decrypt ("Waiting for this message")
+    getMessage: async (key) => msgCache.get(key.id)?.message || undefined,
   });
   active.set(phone, sock);
 
-  if (!caches.has(phone)) caches.set(phone, new Map());
+  // remember messages the bot sends, so they can be re-sent if the phone asks again
+  const origSend = sock.sendMessage.bind(sock);
+  sock.sendMessage = async (...a) => {
+    const r = await origSend(...a);
+    if (r?.key?.id) msgCache.set(r.key.id, r);
+    return r;
+  };
+
   const settings = loadSettings(dir);
   const ctx = { sock, phone, settings, cache: caches.get(phone), save: () => saveSettings(dir, settings) };
 
