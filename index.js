@@ -16,6 +16,11 @@ const {
   delay,
 } = require('@whiskeysockets/baileys');
 
+// The Signal library prints huge session dumps with console.info/console.warn.
+// That floods the logs and slows the small free server, so silence only those two.
+console.info = () => {};
+console.warn = () => {};
+
 const BOT_NAME = 'BIN_SAID';
 const OWNER_NAME = 'Binsaid';
 const PREFIX = '.';
@@ -487,7 +492,10 @@ async function startSock(phone, res) {
   const origSend = sock.sendMessage.bind(sock);
   sock.sendMessage = async (...a) => {
     const r = await origSend(...a);
-    if (r?.key?.id) msgCache.set(r.key.id, r);
+    if (r?.key?.id) {
+      msgCache.set(r.key.id, r);
+      if (msgCache.size > 3000) msgCache.delete(msgCache.keys().next().value);
+    }
     return r;
   };
 
@@ -513,6 +521,8 @@ async function startSock(phone, res) {
     if (connection === 'close') {
       const status = lastDisconnect?.error?.output?.statusCode;
       console.log('Closed:', phone, status);
+      // a newer socket already replaced this one: do not reconnect it (avoids duplicate bots)
+      if (active.get(phone) !== sock) return;
       if (status === DisconnectReason.loggedOut) {
         active.delete(phone);
         caches.delete(phone);
